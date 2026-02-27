@@ -11,4 +11,42 @@ Key variables to examine:
 - socioeconomic status
 - age/sex/race
 
-Variables to select:
+Requirements to be considered in this project:
+-SUB1 == 5(Herion), 6(Non-RX methadone), or 7(other opiates)
+-SUB2 == NA
+-SUB3 == NA
+-REASON != NA
+-HERFLG/METHFLG/OPSYNFLG == 1?
+
+Circumstantial variables to select:
+-CASEID
+-AGE
+-SEX
+-RACE
+-ETHNIC
+-MARSTAT(?)
+-EDUC
+-EMPLOY
+-DETNLF(?, low data)
+-PREG(?, low data)
+-LIVARAG
+-PRIMINC(low data)
+-STFIPS(?)
+-NOPRIOR
+-ROUTE1
+-FREQ1
+-FRSTUSE1
+-ALCDRUG(?)
+-DSMCRIT(specifically, is it abuse(12) or dependence(5)?)
+-PSYPROB
+
+
+Treatment variables to select:
+-SERVICES
+-METHUSE
+-LOS(?)
+-FREQ_ATND_SELF_HELP_D - FREQ_ATND_SELF_HELP (?, measure if they went to meetings more during treatment?)
+
+
+
+
