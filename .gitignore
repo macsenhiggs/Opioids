@@ -1,0 +1,14 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+#modifications
+*.Rproj.user
+*.csv
+*.pdf
+*.zip
+
+!teds-d-2023-ds0001-bndl-data-csv_v1.zip
+#!tedsd_puf_2023.csv
+!teds-d-2023-ds0001-info-codebook_v1.pdf
