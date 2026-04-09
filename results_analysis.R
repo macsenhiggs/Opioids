@@ -3,25 +3,97 @@ library(ggplot2)
 
 #treatment_cols <- c("SERVICES", "METHUSE", "LOS", "FREQ_ATND_SELF_HELP_D")
 
-SERVICES_success <- clean_data_with_regression |>
-  group_by(SERVICES) |>
+
+#INVESTIGATION 1: IMPACT OF METHUSE BY DIFFICULTY OF PATIENT CASE----
+investigation1_data <- clean_data_with_regression |>
+  mutate(EXP_SUCCESS_BIN = cut(EXP_SUCCESS,
+                               breaks = seq(0, 1, by = 0.05),
+                               include.lowest = TRUE)
+  ) |>
+  arrange(EXP_SUCCESS_BIN) |>
+  group_by(#SUB1,
+           EXP_SUCCESS_BIN,
+           METHUSE) |>
   summarize(
     SUCCESS_RATE = mean(SUCCESS),
     EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
     SUCCESS_RATE_OE = mean(SUCCESS_OE),
-    n = n()
+    n = n(),
+    .groups = "drop"
   )
+investigation1_plot <- investigation1_data |>
+  filter(METHUSE != "NA") |>
+  ggplot(aes(x = EXP_SUCCESS_BIN, y = SUCCESS_RATE_OE, color = METHUSE, group = METHUSE)) +
+  geom_point(aes(size = n), alpha = 0.6) +
+  geom_line() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  #facet_wrap(~ SUB1, scales = "free_y") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(investigation1_plot)
 
-METHUSE_success <- clean_data_with_regression |>
-  group_by(METHUSE) |>
+
+#ALT IDEA: Update the data processing to include SUB1
+investigation1_data_alt <- clean_data_with_regression |>
+  filter(!is.na(SUB1), !is.na(METHUSE)) |> # Filter NAs early for a cleaner plot
+  mutate(EXP_SUCCESS_BIN = cut(EXP_SUCCESS,
+                               breaks = seq(0, 1, by = 0.05),
+                               include.lowest = TRUE)
+  ) |>
+  group_by(SUB1, EXP_SUCCESS_BIN, METHUSE) |> # Added SUB1 here
   summarize(
     SUCCESS_RATE = mean(SUCCESS),
     EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
     SUCCESS_RATE_OE = mean(SUCCESS_OE),
-    n = n()
+    n = n(),
+    .groups = "drop"
   )
 
-LOS_success <- clean_data_with_regression |>
+# 2. Update the plot with faceting
+investigation1_plot_alt <- investigation1_data_alt |>
+  filter(METHUSE != "NA") |>
+  ggplot(aes(x = EXP_SUCCESS_BIN, y = SUCCESS_RATE_OE, color = METHUSE, group = METHUSE)) +
+  geom_point(aes(size = n), alpha = 0.6) + # Added alpha to help with overlapping points
+  geom_line() +
+  geom_hline(yintercept = 0, linetype = "dashed",) +
+  facet_wrap(~ SUB1, scales = "free_y") + # This creates the multiple charts
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotates x labels for readability
+  labs(title = "Impact of METHUSE by Case Difficulty and Substance",
+       x = "Expected Success Bin",
+       y = "O/E Success Rate")
+
+print(investigation1_plot_alt)
+
+
+
+#INVESTIGATION 2: IMPACT OF SERVICE STYLE BY DIFFICULTY OF PATIENT CASE----
+SERVICES_data <- clean_data_with_regression |>
+  mutate(EXP_SUCCESS_BIN = cut(EXP_SUCCESS,
+                               breaks = seq(0, 1, by = 0.05),
+                               include.lowest = TRUE)
+  ) |>
+  arrange(EXP_SUCCESS_BIN) |>
+  group_by(EXP_SUCCESS_BIN, SERVICES) |>
+  summarize(
+    SUCCESS_RATE = mean(SUCCESS),
+    EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
+    SUCCESS_RATE_OE = mean(SUCCESS_OE),
+    n = n(),
+    .groups = "drop"
+  )
+SERVICES_plot <- SERVICES_data |>
+  filter(SERVICES != "NA") |>
+  ggplot(aes(x = EXP_SUCCESS_BIN, y = SUCCESS_RATE_OE, color = SERVICES, group = SERVICES)) +
+  geom_point(aes(size = n)) +
+  geom_line() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal()
+print(SERVICES_plot)
+
+
+#INVESTIGATION 3: IMPACT OF LENGTH OF STAY ON SUCCESS OVER EXPECTED----
+investigation3_data <- clean_data_with_regression |>
   group_by(LOS) |>
   summarize(
     SUCCESS_RATE = mean(SUCCESS),
@@ -30,28 +102,114 @@ LOS_success <- clean_data_with_regression |>
     n = n()
   ) |>
   mutate(LOS_INDEX = row_number())
-ggplot(LOS_success, aes(x = LOS_INDEX, y = SUCCESS_RATE_OE)) +
+investigation3_plot <- ggplot(investigation3_data, aes(x = LOS_INDEX, y = SUCCESS_RATE_OE)) +
   geom_path() +
   geom_vline(xintercept = 30, linetype = "dashed") +
   geom_point(aes(size = n)) +
   theme_minimal()
+print(investigation3_plot)
 
 
-FREQ_ATND_SELF_HELP_D_success <- clean_data_with_regression |>
-  group_by(FREQ_ATND_SELF_HELP_D) |>
-  summarize(
-    SUCCESS_RATE = mean(SUCCESS),
-    EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
-    SUCCESS_RATE_OE = mean(SUCCESS_OE),
-    n = n()
-  )
 
-ALL_success <- clean_data_with_regression |>
-  group_by(SERVICES, METHUSE, LOS, FREQ_ATND_SELF_HELP_D) |>
-  summarize(
-    SUCCESS_RATE = mean(SUCCESS),
-    EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
-    SUCCESS_RATE_OE = mean(SUCCESS_OE),
-    n = n()
+
+# FREQ_ATND_SELF_HELP_D_success <- clean_data_with_regression |>
+#   group_by(FREQ_ATND_SELF_HELP_D) |>
+#   summarize(
+#     SUCCESS_RATE = mean(SUCCESS),
+#     EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
+#     SUCCESS_RATE_OE = mean(SUCCESS_OE),
+#     n = n()
+#   )
+
+
+
+#INVESTIGATION 4: IMPACT OF METHUSE BY DRUG USED----
+investigation4_data <- clean_data_with_regression |>
+  group_by(
+    SUB1,
+    METHUSE) |>
+  filter(
+    METHUSE != "NA"
   ) |>
-  filter(n > 100)
+  summarize(
+    SUCCESS_RATE = mean(SUCCESS),
+    EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
+    SUCCESS_RATE_OE = mean(SUCCESS_OE),
+    n = n(),
+    .groups = "drop"
+  )
+min_y_val <- min(investigation4_data$SUCCESS_RATE_OE) * 1.1 #place label 10% lower than min value
+
+investigation4_plot <- ggplot(investigation4_data, aes(x = SUB1, y = SUCCESS_RATE_OE, fill = METHUSE)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.5) +
+  #scale_fill_brewer(palette = "Paired") +
+  geom_text(
+    aes(
+      label = paste0("n = ", n),
+      vjust = ifelse(SUCCESS_RATE_OE >= 0, -0.5, 1.5)
+    ),
+    position = position_dodge(0.5), 
+    color = "black",
+    size = 2.5,
+    fontface = "bold"
+  ) +
+  labs(
+    title = "Bar Chart of Opioid Patient Success over Expected\nby Opioid Therapy Status and Primary Substance",
+    subtitle = "Expected success determined by GLM\nbased on demographic and abuse data",
+    y = "Success Rate over Expected",
+    x = "Primary Substance Abused",
+    fill = "Given\nOpioid\nTherapy"
+  ) +
+  theme_minimal()
+print(investigation4_plot)
+
+
+#INVESTIGATION 5: IMPACT OF METHUSE BY AGE----
+investigation5_data <- clean_data_with_regression |>
+  group_by(
+    AGE,
+    METHUSE) |>
+  filter(
+    METHUSE != "NA"
+  ) |>
+  summarize(
+    SUCCESS_RATE = mean(SUCCESS),
+    EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
+    SUCCESS_RATE_OE = mean(SUCCESS_OE),
+    n = n(),
+    .groups = "drop"
+  )
+min_y_val <- min(investigation5_data$SUCCESS_RATE_OE) * 1.1 #place label 10% lower than min value
+
+investigation5_plot <- ggplot(investigation5_data, aes(x = factor(AGE), y = SUCCESS_RATE_OE, fill = METHUSE)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.5) +
+  #scale_fill_brewer(palette = "Paired") +
+  geom_text(
+    aes(
+      label = paste0("n = ", n),
+      vjust = ifelse(SUCCESS_RATE_OE >= 0, -0.5, 1.5)
+    ),
+    position = position_dodge(0.5), 
+    color = "black",
+    size = 2.5,
+    fontface = "bold"
+  ) +
+  labs(
+    title = "Bar Chart of Opioid Patient Success over Expected\nby Opioid Therapy Status and Primary Substance",
+    subtitle = "Expected success determined by GLM\nbased on demographic and abuse data",
+    y = "Success Rate over Expected",
+    x = "Primary Substance Abused",
+    fill = "Given\nOpioid\nTherapy"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(investigation5_plot)
+
+
+
+
+
+
+
+
+
