@@ -236,18 +236,14 @@ investigation6_data <- clean_data_with_regression |>
 
 library(shadowtext)
 
-# 1. Calculate the size scale based on 'n'
-# We use the same power (0.4) to prevent tiny samples from disappearing entirely
 max_n <- max(investigation6_data$n, na.rm = TRUE)
 plot_data <- investigation6_data %>%
   mutate(size_scale = (n / max_n) ^ 0.2)
 
-# 2. Create the Grid Plot
-ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCESS_RATE_OE)) +
-  # Use width and height inside geom_tile to scale by sample size
+investigation6_plot <- ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCESS_RATE_OE)) +
+
   geom_tile(aes(width = size_scale, height = size_scale), color = "white") +
   
-  # Add the text labels (OE Ratio and n)
   geom_shadowtext(
     aes(label = sprintf("%.2f\n(n=%d)", SUCCESS_RATE_OE, n)),
     color = "white",
@@ -257,7 +253,6 @@ ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCESS_RATE_OE)) +
     lineheight = 0.9
   ) +
   
-  # Diverging color scale: Red (underperforming), White (expected), Green (overperforming)
   scale_fill_gradient2(
     low = "red", 
     mid = "snow2", 
@@ -268,7 +263,6 @@ ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCESS_RATE_OE)) +
     name = "Success OE"
   ) +
   
-  # Separate by Drug (SUB1)
   facet_wrap(~SUB1, ncol = 1) + 
   
   labs(
