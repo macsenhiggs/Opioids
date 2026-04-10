@@ -234,28 +234,80 @@ investigation6_data <- clean_data_with_regression |>
     .groups = "drop"
   )
 
+library(shadowtext)
 
-investigation6_table <- investigation6_data |>
-  # 1. Create a combined label string
-  mutate(
-    cell_label = paste0(
-      round(SUCCESS_RATE_OE, 3), # Round the OE ratio for readability
-      " (n=",n, ")"             # Add a newline and the sample size
-    )
-  ) |>
-  # 2. Select the columns needed for the grid
-  select(SUB1, ROUTE1, FREQ1, cell_label) |>
-  # 3. Pivot using the new string label
-  pivot_wider(names_from = FREQ1, values_from = cell_label)
+# 1. Calculate the size scale based on 'n'
+# We use the same power (0.4) to prevent tiny samples from disappearing entirely
+max_n <- max(investigation6_data$n, na.rm = TRUE)
+plot_data <- investigation6_data %>%
+  mutate(size_scale = (n / max_n) ^ 0.2)
 
-# 4. Split and Print
-list_of_tables <- split(investigation6_table, investigation6_table$SUB1)
+# 2. Create the Grid Plot
+ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCESS_RATE_OE)) +
+  # Use width and height inside geom_tile to scale by sample size
+  geom_tile(aes(width = size_scale, height = size_scale), color = "white") +
+  
+  # Add the text labels (OE Ratio and n)
+  geom_shadowtext(
+    aes(label = sprintf("%.2f\n(n=%d)", SUCCESS_RATE_OE, n)),
+    color = "white",
+    bg.color = "black",
+    bg.r = 0.15,
+    size = 3,
+    lineheight = 0.9
+  ) +
+  
+  # Diverging color scale: Red (underperforming), White (expected), Green (overperforming)
+  scale_fill_gradient2(
+    low = "red", 
+    mid = "snow2", 
+    high = "darkgreen", 
+    midpoint = 0,
+    limits = c(-0.2, 0.2),
+    oob = scales::squish,
+    name = "Success OE"
+  ) +
+  
+  # Separate by Drug (SUB1)
+  facet_wrap(~SUB1, ncol = 1) + 
+  
+  labs(
+    title = "Success Rate: Observed vs. Expected (OE Ratio)",
+    subtitle = "Tile size represents sample size (n); Color represents performance relative to GLM prediction",
+    x = "Route of Administration",
+    y = "Frequency of Use",
+    caption = "OE Ratio > 1.0 indicates the group is succeeding more often than predicted by the model."
+  ) +
+  
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    strip.text = element_text(face = "bold", size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
 
-for (i in list_of_tables) {
-  print(i) 
-}
 
-View(as.data.frame(list_of_tables$`Heroin`))
+# investigation6_table <- investigation6_data |>
+#   # 1. Create a combined label string
+#   mutate(
+#     cell_label = paste0(
+#       round(SUCCESS_RATE_OE, 3), # Round the OE ratio for readability
+#       " (n=",n, ")"             # Add a newline and the sample size
+#     )
+#   ) |>
+#   # 2. Select the columns needed for the grid
+#   select(SUB1, ROUTE1, FREQ1, cell_label) |>
+#   # 3. Pivot using the new string label
+#   pivot_wider(names_from = FREQ1, values_from = cell_label)
+# 
+# # 4. Split and Print
+# list_of_tables <- split(investigation6_table, investigation6_table$SUB1)
+# 
+# for (i in list_of_tables) {
+#   print(i) 
+# }
+# 
+# View(as.data.frame(list_of_tables$`Heroin`))
 
 
 
