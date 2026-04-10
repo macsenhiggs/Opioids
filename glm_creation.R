@@ -4,10 +4,6 @@ library(finalfit)
 library(forcats)
 library(readr)
 
-#TODO:
-#CREATE VARIABLE FOR DIFFERENCE IN SELF HELP ATTENDANCE ON ADMISSION AND DISCHARGE
-#CREATE VARIABLE FOR YEARS OF USAGE
-
 tedsd_puf_2023 <- read_csv("TEDSD 2017 to 2023/tedsd_puf_2023.csv")
 
 data_main = tedsd_puf_2023 |>
@@ -31,7 +27,7 @@ data_cleaned = data_main |>
     SUB1 %in% c(5,6,7),
     #SUB2 %in% c(5,6,7,1),
     #SUB3 %in% c(5,6,7,1),
-    !is.na(SUCCESS),
+    #!is.na(SUCCESS),
   ) |>
   relocate(CASEID, SUCCESS)
 
@@ -240,4 +236,7 @@ clean_data_with_regression <- data_cleaned_renamed |>
   )
 
 
+rm(list = setdiff(ls(), c("circumstances_glm", "clean_data_with_regression", "tedsd_puf_2023")))
 
+
+summary <- summary(circumstances_glm)
