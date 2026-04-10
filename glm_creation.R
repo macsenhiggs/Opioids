@@ -27,7 +27,7 @@ data_cleaned = data_main |>
     SUB1 %in% c(5,6,7),
     #SUB2 %in% c(5,6,7,1),
     #SUB3 %in% c(5,6,7,1),
-    #!is.na(SUCCESS),
+    !is.na(SUCCESS),
   ) |>
   relocate(CASEID, SUCCESS)
 
@@ -208,7 +208,7 @@ rename_columns <- function(data_cleaned) {
     relocate(SUBS_USED, .after = SUB1)
   
   
-  #remove all NA values----
+  #rename all NA values to "NA" to prevent GLM error----
   data_cleaned_renamed <- data_cleaned_renamed |>
     mutate(across(where(is.factor), ~fct_na_value_to_level(.x, level = "NA")))
   
@@ -219,6 +219,9 @@ data_cleaned_renamed <- rename_columns(data_cleaned)
 
 #create GLM----
 str(data_cleaned_renamed)
+
+#instead of comparing to default, compare to average
+options(contrasts = c("contr.sum", "contr.poly"))
 
 circumstances_glm <-
   glm(SUCCESS ~ SUB1 + SUBS_USED + AGE + SEX + RACE + ETHNIC + EDUC +
