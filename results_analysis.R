@@ -213,3 +213,55 @@ print(investigation5_plot)
 
 
 
+
+#INVESTIGATION 6: IMPACT OF METHUSE BY DRUG, ROUTE, AND FREQUENCY----
+investigation6_data <- clean_data_with_regression |>
+  group_by(
+    SUB1,
+    ROUTE1,
+    FREQ1
+    ) |>
+  filter(
+    METHUSE == "Yes",
+    ROUTE1 != "NA",
+    FREQ1 != "NA"
+  ) |>
+  summarize(
+    SUCCESS_RATE = mean(SUCCESS),
+    EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
+    SUCCESS_RATE_OE = mean(SUCCESS_OE),
+    n = n(),
+    .groups = "drop"
+  )
+
+
+investigation6_table <- investigation6_data |>
+  # 1. Create a combined label string
+  mutate(
+    cell_label = paste0(
+      round(SUCCESS_RATE_OE, 3), # Round the OE ratio for readability
+      " (n=",n, ")"             # Add a newline and the sample size
+    )
+  ) |>
+  # 2. Select the columns needed for the grid
+  select(SUB1, ROUTE1, FREQ1, cell_label) |>
+  # 3. Pivot using the new string label
+  pivot_wider(names_from = FREQ1, values_from = cell_label)
+
+# 4. Split and Print
+list_of_tables <- split(investigation6_table, investigation6_table$SUB1)
+
+for (i in list_of_tables) {
+  print(i) 
+}
+
+View(as.data.frame(list_of_tables$`Heroin`))
+
+
+
+
+
+
+
+
+
