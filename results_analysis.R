@@ -28,9 +28,21 @@ investigation1_plot <- investigation1_data |>
   geom_line() +
   geom_hline(yintercept = 0, linetype = "dashed") +
   #facet_wrap(~ SUB1, scales = "free_y") +
+  labs(
+    title = "Impact of METHUSE by Formulated Case Difficulty",
+    subtitle = "Among rehab patients primarily dependent on heroin, methadones, or other opiates (n = 213388)",
+    size = "Number of Cases",
+    x = "Case Difficulty (binned by 0.05)",
+    y = "Success Rate over Expected",
+    caption = "Data: TEDS 2023"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-print(investigation1_plot)
+
+#print(investigation1_plot)
+ggsave("investigation1_plot.png", investigation1_plot, path = "plots/",
+       units = "px", width = 750, height = 600, scale = 4)
+
 
 
 #ALT IDEA: Update the data processing to include SUB1
@@ -104,7 +116,8 @@ investigation3_data <- clean_data_with_regression |>
   mutate(LOS_INDEX = row_number())
 investigation3_plot <- ggplot(investigation3_data, aes(x = LOS_INDEX, y = SUCCESS_RATE_OE)) +
   geom_path() +
-  geom_vline(xintercept = 30, linetype = "dashed") +
+  geom_vline(xintercept = 30, linetype = "dotted") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
   geom_point(aes(size = n)) +
   theme_minimal()
 print(investigation3_plot)
@@ -270,7 +283,7 @@ investigation6_plot <- ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCE
     subtitle = "Tile size represents sample size (n); Color represents performance relative to GLM prediction",
     x = "Route of Administration",
     y = "Frequency of Use",
-    caption = "OE Ratio > 1.0 indicates the group is succeeding more often than predicted by the model."
+    caption = "OE Ratio > 0.0 indicates the group is succeeding more often than predicted by the model."
   ) +
   
   theme_minimal() +
@@ -279,6 +292,9 @@ investigation6_plot <- ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCE
     strip.text = element_text(face = "bold", size = 12),
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
+
+ggsave("investigation6_plot.png", investigation6_plot, path = "plots/",
+       units = "px", width = 750, height = 600, scale = 4)
 
 
 # investigation6_table <- investigation6_data |>

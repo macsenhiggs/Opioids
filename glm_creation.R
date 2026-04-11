@@ -4,7 +4,9 @@ library(finalfit)
 library(forcats)
 library(readr)
 
-tedsd_puf_2023 <- read_csv("TEDSD 2017 to 2023/tedsd_puf_2023.csv")
+if (!exists("tedsd_puf_2023")) {
+  tedsd_puf_2023 <- read_csv("TEDSD 2017 to 2023/tedsd_puf_2023.csv")
+}
 
 data_main = tedsd_puf_2023 |>
   mutate(SUCCESS = ifelse(REASON == 1, 1,
