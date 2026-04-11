@@ -4,18 +4,22 @@ library(finalfit)
 library(forcats)
 library(readr)
 
-if (!exists("tedsd_puf_2023")) {
-  tedsd_puf_2023 <- read_csv("TEDSD 2017 to 2023/tedsd_puf_2023.csv")
+
+if (exists("tedsd_puf_join")) {
+  data_main = tedsd_puf_join |>
+    mutate(SUCCESS = ifelse(REASON == 1, 1,
+                            ifelse(REASON %in% c(2,3), 0, NA)))
+} else {
+  message("ERROR: IMPORT DATASET FROM csv_import.R BEFORE CREATING GLM")
 }
 
-data_main = tedsd_puf_2023 |>
-  mutate(SUCCESS = ifelse(REASON == 1, 1,
-                          ifelse(REASON %in% c(2,3), 0, NA)))
 
-filter_cols <- c("SUB1", "SUB2", "SUB3", "REASON", "HERFLG", "METHFLG", "OPSYNFLG")
+
+
+filter_cols <- c("SUB1", "SUB2", "SUB3", "REASON", "HERFLG", "METHFLG", "OPSYNFLG", "SERVICES")
 demo_cols <- c("AGE", "SEX", "RACE", "ETHNIC", "EDUC", "EMPLOY", "LIVARAG", "PRIMINC", "DIVISION")
 usage_cols <- c("NOPRIOR", "ROUTE1", "FREQ1", "FRSTUSE1", "ALCDRUG", "DSMCRIT", "PSYPROB", "FREQ_ATND_SELF_HELP")
-treatment_cols <- c("SERVICES", "METHUSE", "LOS", "FREQ_ATND_SELF_HELP_D")
+treatment_cols <- c("METHUSE", "LOS", "FREQ_ATND_SELF_HELP_D")
 other_cols <- c("SUCCESS", "CASEID")
 all_target_cols <- c(filter_cols,
                      demo_cols,
@@ -228,7 +232,7 @@ options(contrasts = c("contr.sum", "contr.poly"))
 circumstances_glm <-
   glm(SUCCESS ~ SUB1 + SUBS_USED + AGE + SEX + RACE + ETHNIC + EDUC +
         EMPLOY + LIVARAG + PRIMINC + DIVISION + NOPRIOR + ROUTE1 + FREQ1 +
-        FRSTUSE1 + ALCDRUG + DSMCRIT + PSYPROB + FREQ_ATND_SELF_HELP,
+        FRSTUSE1 + ALCDRUG + DSMCRIT + PSYPROB + FREQ_ATND_SELF_HELP + SERVICES,
       data = data_cleaned_renamed,
       family = "binomial")
 
@@ -244,4 +248,4 @@ clean_data_with_regression <- data_cleaned_renamed |>
 rm(list = setdiff(ls(), c("circumstances_glm", "clean_data_with_regression", "tedsd_puf_2023")))
 
 
-summary <- summary(circumstances_glm)
+#summary <- summary(circumstances_glm)
