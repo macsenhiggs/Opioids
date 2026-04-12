@@ -10,7 +10,7 @@ if (exists("tedsd_puf_join")) {
     mutate(SUCCESS = ifelse(REASON == 1, 1,
                             ifelse(REASON %in% c(2,3), 0, NA)))
 } else {
-  message("ERROR: IMPORT DATASET FROM csv_import.R BEFORE CREATING GLM")
+  stop("ERROR: IMPORT DATASET FROM csv_import.R BEFORE CREATING GLM")
 }
 
 
@@ -245,7 +245,7 @@ clean_data_with_regression <- data_cleaned_renamed |>
   )
 
 
-rm(list = setdiff(ls(), c("circumstances_glm", "clean_data_with_regression", "tedsd_puf_2023")))
+rm(list = setdiff(ls(), c("circumstances_glm", "clean_data_with_regression", "tedsd_puf_join")))
 
 
 #summary <- summary(circumstances_glm)
