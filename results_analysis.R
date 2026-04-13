@@ -251,11 +251,6 @@ ggsave("investigation4_plot.png", investigation4_plot, path = "plots/",
        units = "px", width = 750, height = 600, scale = 4)
 
 
-
-
-
-
-
-
+rm(list = ls(pattern = "investigation[0-9]|plot_data"))
 
 
