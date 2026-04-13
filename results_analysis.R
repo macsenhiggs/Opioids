@@ -2,14 +2,17 @@ library(tidyverse)
 library(ggplot2)
 
 
+if (!exists("clean_data_with_regression")) {
+  stop("ERROR: GET DATA WITH REGRESSION FROM glm_creation.R BEFORE PERFORMING ANALYSIS")
+}
+
+
 #INVESTIGATION 0: EXPLORING EXPECTED SUCCESS----
 
 investigation0_data <- clean_data_with_regression |>
   filter(LIVARAG != "NA")
 
-investigation0_plot <- ggplot(investigation0_data, aes(x = EXP_SUCCESS, 
-                                                       fill = SERVICES
-)
+investigation0_plot <- ggplot(investigation0_data, aes(x = EXP_SUCCESS, fill = SERVICES)
 ) +
   geom_histogram(binwidth = 0.01,
                  #position = "dodge"
@@ -157,8 +160,8 @@ investigation2_plot <- ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCE
     subtitle = "Tile size represents sample size (n); Color represents performance relative to GLM prediction",
     x = "Route of Administration",
     y = "Frequency of Use",
-    caption = "OE Ratio > 0.0 indicates the group is succeeding more often than predicted by the model."
-  ) +
+    caption = "Data: TEDS 2022-2023"
+    ) +
   
   theme_minimal() +
   theme(
@@ -189,6 +192,13 @@ investigation3_plot <- ggplot(investigation3_data, aes(x = LOS_INDEX, y = SUCCES
   geom_vline(xintercept = 30, linetype = "dotted") +
   geom_hline(yintercept = 0, linetype = "dashed") +
   geom_point(aes(size = n)) +
+  labs(
+    title = "Relative Success Rate of Opioid Rehab Cases By Length of Stay",
+    subtitle = "LOS is grouped for stays > 30 days (n = 439300)",
+    x = "Length of Stay",
+    y = "Success Rate Over Expected",
+    caption = "Data: TEDS 2022-2023"
+  ) +
   theme_minimal()
 #print(investigation3_plot)
 ggsave("investigation3_plot.png", investigation3_plot, path = "plots/",
@@ -227,11 +237,12 @@ investigation4_plot <- ggplot(investigation4_data, aes(x = factor(AGE), y = SUCC
     fontface = "bold"
   ) +
   labs(
-    title = "Bar Chart of Opioid Patient Success over Expected\nby Opioid Therapy Status and Primary Substance",
-    subtitle = "Expected success determined by GLM\nbased on demographic and abuse data",
+    title = "Bar Chart of Opioid Patient Success over Expected by Opioid Therapy Status and Primary Substance",
+    subtitle = "Expected success determined by GLM based on demographic and abuse data",
     y = "Success Rate over Expected",
-    x = "Primary Substance Abused",
-    fill = "Given\nOpioid\nTherapy"
+    x = "Age Group",
+    fill = "Given\nOpioid\nTherapy",
+    caption = "Data: TEDS 2022-2023"
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
