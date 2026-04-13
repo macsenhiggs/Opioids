@@ -1,6 +1,7 @@
 .Rproj.user
 .Rhistory
 .RData
+.RDataTmp
 .Ruserdata
 
 #modifications
@@ -16,3 +17,6 @@ Opioids.RData
 
 #Do not include temp files
 ~*
+
+#Do not include plots
+plots/*
