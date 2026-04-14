@@ -224,7 +224,7 @@ rename_columns <- function(data_cleaned) {
 data_cleaned_renamed <- rename_columns(data_cleaned)
 
 #create GLM----
-str(data_cleaned_renamed)
+#str(data_cleaned_renamed)
 
 #instead of comparing to default, compare to average
 options(contrasts = c("contr.sum", "contr.poly"))
