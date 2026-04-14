@@ -9,7 +9,10 @@ if (!exists("circumstances_glm")) {
 }
 
 # Calculate adjusted probabilities for SUB1
-prob_cols <- ggpredict(circumstances_glm)
+prob_cols <- predict_response(circumstances_glm, 
+                              margin = "mean_mode")
+
+
 
 all_probs_df <- prob_cols %>%
   map_df(~ as.data.frame(.x), .id = "predictor_name") |>
@@ -34,5 +37,6 @@ tail(all_probs_mean_diff, 5)
 fwrite(all_probs_mean_diff, "misc-files/all_probs_mean_diff.csv")
 
 
-rm(list = setdiff(ls(), c("circumstances_glm", "clean_data_with_regression", "tedsd_puf_join", "all_probs_mean_diff")))
+rm(list = setdiff(ls(), c("circumstances_glm", "prob_cols", "clean_data_with_regression",
+                          "tedsd_puf_join", "all_probs_mean_diff")))
 
