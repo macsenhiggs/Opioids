@@ -4,8 +4,9 @@ library(ggplot2)
 library(dplyr)
 library(purrr)
 
-
-
+if (!exists("circumstances_glm")) {
+  stop("ERROR: GET GLM FROM glm_creation.R BEFORE PERFORMING CI ANALYSIS")
+}
 
 # Calculate adjusted probabilities for SUB1
 prob_cols <- ggpredict(circumstances_glm)
@@ -23,29 +24,15 @@ mean_vals <- all_probs_df |>
 all_probs_mean_diff <- all_probs_df |>
   left_join(mean_vals, by = "group") |>
   mutate(group_mean_diff = predicted - mean_predicted) |>
-  format(group_mean_diff = group_mean_diff, scientific = FALSE) |>
-  select(-c(std.error, conf.low, conf.high, group))
+  #format(group_mean_diff = group_mean_diff, scientific = FALSE) |>
+  select(-c(std.error, conf.low, conf.high, group)) |>
+  arrange(desc(group_mean_diff))
+
+head(all_probs_mean_diff, 5)
+tail(all_probs_mean_diff, 5)
 
 fwrite(all_probs_mean_diff, "misc-files/all_probs_mean_diff.csv")
 
 
+rm(list = setdiff(ls(), c("circumstances_glm", "clean_data_with_regression", "tedsd_puf_join", "all_probs_mean_diff")))
 
-
-
-#EXPERIMENT: EXTRACT ODDS RATIOS
-# Extract and calculate Odds Ratios
-impact_table <- tidy(
-  circumstances_glm,
-  exponentiate = TRUE,
-  conf.int = TRUE,
-  conf.method = "Wald"
-  ) %>%
-  select(term, estimate, p.value, conf.low, conf.high) %>%
-  rename(odds_ratio = estimate) %>%
-  arrange(desc(odds_ratio)) # Highest impact at the top
-
-# View the Top 5 Positive Impacts
-head(impact_table, 5)
-
-# View the Top 5 Negative Impacts
-tail(impact_table, 5)
