@@ -13,7 +13,7 @@ path = "plots/"
 units = "px"
 width = 750
 height = 600
-scale = 3
+scale = 3.5
 
 
 #INVESTIGATION 0: EXPLORING EXPECTED SUCCESS----
@@ -36,7 +36,13 @@ investigation0_plot <- ggplot(investigation0_data, aes(x = EXP_SUCCESS, fill = S
   theme(
     legend.position = c(1, 1),
     legend.justification = c(1, 1),
+    #legend.text = element_shadowtext(colour = "white", bg.colour = "black", bg.r = 0.1),
     text = element_text(face = "bold")
+  ) +
+  guides(
+    fill = guide_legend(
+      label.position = "left",
+    )
   )
 
 ggsave("investigation0_plot.png", investigation0_plot,
@@ -64,29 +70,37 @@ investigation0.1_data <- clean_data_with_regression |>
   filter(
     n >= 100
   ) |>
-  relocate(SERVICES)
+  relocate(SERVICES) |>
+  mutate(
+    #SERVICES = str_replace(SERVICES, ",(?=[^,]*$)", ",\n")
+    )
 
 investigation0.1_plot <- ggplot(investigation0.1_data, aes(x = EXP_SUCCESS_RATE, y = SUCCESS_RATE, color = SERVICES)) +
   geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
-  geom_point(aes(size = n), alpha = 0.5) +
+  geom_point(aes(size = n), alpha = 1) +
   scale_color_brewer(type = "seq", direction = -1, palette = "Spectral") +
   labs(
     title = "Success Rate vs. Expected Success Rate for Unique Patient Profiles",
     subtitle = "Each point represents a unique combination of SERVICES, SUB1, SUBS_USED, ROUTE1, & FREQ1
-(n >= 100)",
+(Fill indicates SERVICES type, n >= 100)",
     x = "Expected Success Rate",
     y = "Actual Success Rate",
     caption = "Data: TEDS-D 2022-2023"
   ) +
   theme_minimal() +
   theme(
-    #legend.position = c(1, 1),
-    #legend.justification = c(1, 1),
+    legend.position = c(1, 0.1),
+    legend.justification = c(1, 0.1),
     text = element_text(face = "bold")
+  ) +
+  guides(
+    size = FALSE
   )
 
+
+
 #print(investigation0.1_plot)
-ggsave("investigation0-1_plot.png", investigation0.1_plot,
+ggsave("investigation0_1_plot.png", investigation0.1_plot,
        path = path, units = units, width = width, height = height, scale = scale) 
 
 # investigation0.1_plot_alt <- ggplot(investigation0.1_data, aes(x = EXP_SUCCESS_RATE, y = SUCCESS_RATE_OE, color = SERVICES)) +
@@ -135,8 +149,8 @@ investigation1_plot <- investigation1_data |>
   #facet_wrap(~ SUB1, scales = "free_y") +
   labs(
     title = "Impact of METHUSE on Success over Expected by Case Difficulty",
-    subtitle = "Expected Success Binned by 0.05 (n = 213388)",
-    size = "Number of Cases",
+    subtitle = "Expected Success Binned by 0.05",
+    #size = "Number of Cases",
     x = "Expected Success Probability",
     y = "Success Rate over Expected",
     caption = "Data: TEDS-D 2022-2023"
@@ -155,6 +169,9 @@ ggsave("investigation1_plot.png", investigation1_plot,
 
 
 #INVESTIGATION 2: IMPACT OF METHUSE BY DRUG, ROUTE, AND FREQUENCY----
+
+FREQ1_order <- c("No use in the\npast month", "Some use", "Daily use")
+
 investigation2_data <- clean_data_with_regression |>
   group_by(
     SUB1,
@@ -172,7 +189,11 @@ investigation2_data <- clean_data_with_regression |>
     SUCCESS_RATE_OE = mean(SUCCESS_OE),
     n = n(),
     .groups = "drop"
-  )
+  ) |>
+  mutate(
+    FREQ1 = str_replace_all(FREQ1, "\\bthe past\\b", "the\npast"),
+    FREQ1 = factor(FREQ1, levels = FREQ1_order),
+    )
 
 max_n <- max(investigation2_data$n, na.rm = TRUE)
 plot_data <- investigation2_data %>%
@@ -182,12 +203,11 @@ investigation2_plot <- ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCE
   
   geom_tile(aes(width = size_scale, height = size_scale), color = "white") +
   
-  geom_shadowtext(
+  geom_text(
     aes(label = sprintf("%.2f\n(n=%d)", SUCCESS_RATE_OE, n)),
-    color = "white",
-    bg.color = "black",
-    bg.r = 0.15,
-    size = 3,
+    color = "black",
+    fontface = "bold",
+    size = 4,
     lineheight = 0.9
   ) +
   
@@ -198,14 +218,14 @@ investigation2_plot <- ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCE
     midpoint = 0,
     limits = c(-0.2, 0.2),
     oob = scales::squish,
-    name = "Success OE"
+    name = "Success\nRate\nOE"
   ) +
   
   facet_wrap(~SUB1, ncol = 1) + 
   
   labs(
     title = "Success Rate Over Expected of Patients Given Opioid Therapy by Drug Usage Patterns",
-    subtitle = "Tile size represents sample size (n); Color represents performance relative to GLM prediction",
+    subtitle = "Patterns based on primary substance used (tiles scaled to sample size)",
     x = "Route of Administration",
     y = "Frequency of Use",
     caption = "Data: TEDS-D 2022-2023"
@@ -269,7 +289,11 @@ plot.new()
 
 #default: c(5, 4, 4, 2) + 0.1
 #par(mar = c(7, 6, 6, 4))
-par(plt = c(0.15, 0.85, 0.15, 0.85), font.lab = 2, font.axis = 2)
+par(
+  plt = c(0.15, 0.85, 0.15, 0.85),
+    font.lab = 2,
+    font.axis = 2
+  )
 
 radarchart(
   radar_final,
@@ -285,14 +309,15 @@ radarchart(
   axislabcol = "grey25", 
   caxislabels = round(seq(min_val, max_val, length.out = 5), 2), 
   cglwd = 0.8,
-  # Labels
-  vlcex = 0.8 
+  vlcex = 0.8,
+  vfont = c("sans serif", "bold")
 )
 
 title(
   main = "Success Rate OE for METHUSE Values by Service Type", 
-      col.main = "black", 
-      cex.main = 1.5
+  col.main = "black", 
+  cex.main = 1.5,
+  font.main = 2,
   )
 
 
@@ -313,10 +338,12 @@ legend(
   x = "bottom",           # Position relative to the plot
   inset = c(-0.1, -0.2),    # Push it DOWN into the margin (negative value)
   title = "METHUSE",      # Your legend title
+  title.font = 2,
   legend = rownames(radar_final[-c(1,2),]),
   pch = 20,
   col = colors_border,
   text.col = "black",
+  text.font = 2,
   cex = 1.1,
   pt.cex = 2,
   bty = "o",              # "o" creates the box (border)
@@ -329,17 +356,17 @@ legend(
 
 mtext(
   side = 1,
-  text = "data: TEDS-D 2022-2023", 
+  text = "Data: TEDS-D 2022-2023", 
   line = 4,
   adj = 1,
   cex = 0.8,
-  #font = 3
+  font = 2
 )
 
 
 
-# investigation3_plot <- recordPlot()
-# print(investigation3_plot)
+investigation3_plot <- recordPlot()
+print(investigation3_plot)
 
 #dev.copy(png, filename = "plots/investigation3_plot.png", width = width, height = height) [10.2]
 dev.off() #[10.2]
