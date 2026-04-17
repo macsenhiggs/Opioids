@@ -1,16 +1,24 @@
 library(tidyverse)
 library(ggplot2)
+library(fmsb)
+library(shadowtext)
 
 
 if (!exists("clean_data_with_regression")) {
   stop("ERROR: GET DATA WITH REGRESSION FROM glm_creation.R BEFORE PERFORMING ANALYSIS")
 }
 
+#GLOBAL PLOT SETTINGS----
+path = "plots/"
+units = "px"
+width = 750
+height = 600
+scale = 3
+
 
 #INVESTIGATION 0: EXPLORING EXPECTED SUCCESS----
 
-investigation0_data <- clean_data_with_regression |>
-  filter(LIVARAG != "NA")
+investigation0_data <- clean_data_with_regression
 
 investigation0_plot <- ggplot(investigation0_data, aes(x = EXP_SUCCESS, fill = SERVICES)
 ) +
@@ -18,15 +26,87 @@ investigation0_plot <- ggplot(investigation0_data, aes(x = EXP_SUCCESS, fill = S
                  #position = "dodge"
   ) +
   labs(
-    title = "Histogram of Expected Case Success by Service Type",
-    subtitle = "Binwidth = 0.01",
+    title = "Histogram of Expected Case Success by Services Type",
+    subtitle = "Binwidth = 0.01 (n = 213388)",
     x = "Expected Success",
-    caption = "Data: TEDS 2022-2023"
+    caption = "Data: TEDS-D 2022-2023"
   ) +
-  theme_minimal()
+  scale_fill_brewer(type = "seq", direction = -1, palette = "Spectral") +
+  theme_minimal() +
+  theme(
+    legend.position = c(1, 1),
+    legend.justification = c(1, 1),
+    text = element_text(face = "bold")
+  )
 
-ggsave("investigation0_plot.png", investigation0_plot, path = "plots/",
-       units = "px", width = 750, height = 600, scale = 4)
+ggsave("investigation0_plot.png", investigation0_plot,
+       path = path, units = units, width = width, height = height, scale = scale)
+
+
+#INVESTIGATION 0.1: EXPLORING EXPECTED SUCCESS ACCUR----
+
+investigation0.1_data <- clean_data_with_regression |>
+  group_by(SUB1, SUBS_USED, SERVICES,
+           #AGE, SEX,
+           #EDUC, EMPLOY, 
+           #LIVARAG,PRIMINC,
+           #DIVISION,
+           ROUTE1, FREQ1, 
+           #FRSTUSE1
+           ) |>
+  summarize(
+    EXP_SUCCESS_RATE = mean(EXP_SUCCESS),
+    SUCCESS_RATE = mean(SUCCESS),
+    SUCCESS_RATE_OE = mean(SUCCESS_OE),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  filter(
+    n >= 100
+  ) |>
+  relocate(SERVICES)
+
+investigation0.1_plot <- ggplot(investigation0.1_data, aes(x = EXP_SUCCESS_RATE, y = SUCCESS_RATE, color = SERVICES)) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
+  geom_point(aes(size = n), alpha = 0.5) +
+  scale_color_brewer(type = "seq", direction = -1, palette = "Spectral") +
+  labs(
+    title = "Success Rate vs. Expected Success Rate for Unique Patient Profiles",
+    subtitle = "Each point represents a unique combination of SERVICES, SUB1, SUBS_USED, ROUTE1, & FREQ1
+(n >= 100)",
+    x = "Expected Success Rate",
+    y = "Actual Success Rate",
+    caption = "Data: TEDS-D 2022-2023"
+  ) +
+  theme_minimal() +
+  theme(
+    #legend.position = c(1, 1),
+    #legend.justification = c(1, 1),
+    text = element_text(face = "bold")
+  )
+
+#print(investigation0.1_plot)
+ggsave("investigation0-1_plot.png", investigation0.1_plot,
+       path = path, units = units, width = width, height = height, scale = scale) 
+
+# investigation0.1_plot_alt <- ggplot(investigation0.1_data, aes(x = EXP_SUCCESS_RATE, y = SUCCESS_RATE_OE, color = SERVICES)) +
+#   geom_abline(intercept = 0, slope = 0, color = "black", linetype = "dashed") +
+#   geom_point(aes(size = n), alpha = 0.5) +
+#   scale_color_brewer(type = "seq", direction = -1, palette = "Spectral") +
+#   labs(
+#     title = "Success Rate OE vs. Expected Success Rate for Unique Patient Profiles",
+#     subtitle = "Each point represents a unique combination of SERVICES, SUB1, SUBS_USED, ROUTE1, & FREQ1
+# (n >= 100)",
+#     x = "Expected Success Rate",
+#     y = "Success Rate OE",
+#     caption = "Data: TEDS-D 2022-2023"
+#   ) +
+#   theme_minimal()
+# 
+# print(investigation0.1_plot_alt)
+# ggsave("investigation0-1_plot_alt.png", investigation0.1_plot_alt,
+#        path = path, units = units, width = width, height = height, scale = scale)
+  
 
 
 #INVESTIGATION 1: IMPACT OF METHUSE BY DIFFICULTY OF PATIENT CASE----
@@ -54,54 +134,24 @@ investigation1_plot <- investigation1_data |>
   geom_hline(yintercept = 0, linetype = "dashed") +
   #facet_wrap(~ SUB1, scales = "free_y") +
   labs(
-    title = "Impact of METHUSE by Predicted Likelihood of Success",
-    subtitle = "Among rehab patients primarily dependent on heroin, methadones, or other opiates (n = 213388)",
+    title = "Impact of METHUSE on Success over Expected by Case Difficulty",
+    subtitle = "Expected Success Binned by 0.05 (n = 213388)",
     size = "Number of Cases",
-    x = "Projected Success Probability (binned by 0.05)",
+    x = "Expected Success Probability",
     y = "Success Rate over Expected",
-    caption = "Data: TEDS 2022-2023"
+    caption = "Data: TEDS-D 2022-2023"
   ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = c(1, 1),
+    legend.justification = c(1, 1),
+    text = element_text(face = "bold")
+    )
 
 #print(investigation1_plot)
-ggsave("investigation1_plot.png", investigation1_plot, path = "plots/",
-       units = "px", width = 750, height = 600, scale = 4)
-
-
-# 
-# #ALT IDEA: Update the data processing to include SUB1
-# investigation1_data_alt <- clean_data_with_regression |>
-#   filter(!is.na(SUB1), !is.na(METHUSE)) |> # Filter NAs early for a cleaner plot
-#   mutate(EXP_SUCCESS_BIN = cut(EXP_SUCCESS,
-#                                breaks = seq(0, 1, by = 0.05),
-#                                include.lowest = TRUE)
-#   ) |>
-#   group_by(SUB1, EXP_SUCCESS_BIN, METHUSE) |> # Added SUB1 here
-#   summarize(
-#     SUCCESS_RATE = mean(SUCCESS),
-#     EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
-#     SUCCESS_RATE_OE = mean(SUCCESS_OE),
-#     n = n(),
-#     .groups = "drop"
-#   )
-# 
-# # 2. Update the plot with faceting
-# investigation1_plot_alt <- investigation1_data_alt |>
-#   filter(METHUSE != "NA") |>
-#   ggplot(aes(x = EXP_SUCCESS_BIN, y = SUCCESS_RATE_OE, color = METHUSE, group = METHUSE)) +
-#   geom_point(aes(size = n), alpha = 0.6) + # Added alpha to help with overlapping points
-#   geom_line() +
-#   geom_hline(yintercept = 0, linetype = "dashed",) +
-#   facet_wrap(~ SUB1, scales = "free_y") + # This creates the multiple charts
-#   theme_minimal() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotates x labels for readability
-#   labs(title = "Impact of METHUSE by Case Difficulty and Substance",
-#        x = "Expected Success Bin",
-#        y = "O/E Success Rate")
-# 
-# print(investigation1_plot_alt)
-
+ggsave("investigation1_plot.png", investigation1_plot,
+       path = path, units = units, width = width, height = height, scale = scale)
 
 
 #INVESTIGATION 2: IMPACT OF METHUSE BY DRUG, ROUTE, AND FREQUENCY----
@@ -123,8 +173,6 @@ investigation2_data <- clean_data_with_regression |>
     n = n(),
     .groups = "drop"
   )
-
-library(shadowtext)
 
 max_n <- max(investigation2_data$n, na.rm = TRUE)
 plot_data <- investigation2_data %>%
@@ -156,53 +204,146 @@ investigation2_plot <- ggplot(plot_data, aes(x = ROUTE1, y = FREQ1, fill = SUCCE
   facet_wrap(~SUB1, ncol = 1) + 
   
   labs(
-    title = "Success Rate: Observed vs. Expected (OE Ratio)",
+    title = "Success Rate Over Expected of Patients Given Opioid Therapy by Drug Usage Patterns",
     subtitle = "Tile size represents sample size (n); Color represents performance relative to GLM prediction",
     x = "Route of Administration",
     y = "Frequency of Use",
-    caption = "Data: TEDS 2022-2023"
+    caption = "Data: TEDS-D 2022-2023"
     ) +
   
   theme_minimal() +
   theme(
     panel.grid = element_blank(),
     strip.text = element_text(face = "bold", size = 12),
-    axis.text.x = element_text(angle = 45, hjust = 1)
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    text = element_text(face = "bold")
   )
 
-ggsave("investigation2_plot.png", investigation2_plot, path = "plots/",
-       units = "px", width = 750, height = 600, scale = 4)
+ggsave("investigation2_plot.png", investigation2_plot,
+       path = path, units = units, width = width, height = height, scale = scale)
 
 
 
 
 
-#INVESTIGATION 3: IMPACT OF LENGTH OF STAY ON SUCCESS OVER EXPECTED----
+#INVESTIGATION 3: IMPACT OF METHUSE BY SERVICES TYPE----
 investigation3_data <- clean_data_with_regression |>
-  group_by(LOS) |>
+  filter(
+    METHUSE != "NA"
+  ) |>
+  group_by(SERVICES, METHUSE) |>
   summarize(
     SUCCESS_RATE = mean(SUCCESS),
     EXPECTED_SUCCESS_RATE = mean(EXP_SUCCESS),
     SUCCESS_RATE_OE = mean(SUCCESS_OE),
-    n = n()
-  ) |>
-  mutate(LOS_INDEX = row_number())
-investigation3_plot <- ggplot(investigation3_data, aes(x = LOS_INDEX, y = SUCCESS_RATE_OE)) +
-  geom_path() +
-  geom_vline(xintercept = 30, linetype = "dotted") +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_point(aes(size = n)) +
-  labs(
-    title = "Relative Success Rate of Opioid Rehab Cases By Length of Stay",
-    subtitle = "LOS is grouped for stays > 30 days (n = 439300)",
-    x = "Length of Stay",
-    y = "Success Rate Over Expected",
-    caption = "Data: TEDS 2022-2023"
-  ) +
-  theme_minimal()
-#print(investigation3_plot)
-ggsave("investigation3_plot.png", investigation3_plot, path = "plots/",
-       units = "px", width = 750, height = 600, scale = 4)
+    n = n(),
+    .groups = "drop"
+  )
+
+radar_prep <- investigation3_data |>
+  select(SERVICES, METHUSE, SUCCESS_RATE_OE) |>
+  pivot_wider(names_from = SERVICES, values_from = SUCCESS_RATE_OE) |>
+  column_to_rownames("METHUSE")
+
+max_val <- max(radar_prep, na.rm = TRUE)
+min_val <- min(radar_prep, na.rm = TRUE)
+
+radar_final <- rbind(rep(max_val, ncol(radar_prep)), 
+                     rep(min_val, ncol(radar_prep)), 
+                     radar_prep)
+
+colnames(radar_final) <- gsub(", ?", ",\n", colnames(radar_final))
+
+# Define colors (e.g., Blue for No, Red for Yes)
+colors_border = c(rgb(0.97, 0.46, 0.43, 0.9), rgb(0, 0.75, 0.77, 0.9))
+colors_in = c(rgb(0.97, 0.46, 0.43, 0.4), rgb(0, 0.75, 0.77, 0.4))
+
+
+#PLOT STARTS HERE
+
+png("plots/investigation3_plot.png", 
+    width = 10, height = 8, units = "in", res = 200)
+
+plot.new()
+
+
+#default: c(5, 4, 4, 2) + 0.1
+#par(mar = c(7, 6, 6, 4))
+par(plt = c(0.15, 0.85, 0.15, 0.85), font.lab = 2, font.axis = 2)
+
+radarchart(
+  radar_final,
+  axistype = 1,
+  # Customize the polygon (the shapes)
+  pcol = colors_border, 
+  pfcol = colors_in, 
+  plwd = 4, 
+  plty = 1,
+  # Customize the grid
+  cglcol = "grey", 
+  cglty = 1, 
+  axislabcol = "grey25", 
+  caxislabels = round(seq(min_val, max_val, length.out = 5), 2), 
+  cglwd = 0.8,
+  # Labels
+  vlcex = 0.8 
+)
+
+title(
+  main = "Success Rate OE for METHUSE Values by Service Type", 
+      col.main = "black", 
+      cex.main = 1.5
+  )
+
+
+
+# legend("top", 
+#        legend = rownames(radar_final[-c(1,2),]), 
+#        col = colors_border,
+#        pch = 20, 
+#        bty = "n", 
+#        pt.cex = 2, 
+#        cex = 1.2, 
+#        x.intersp = 0.5,
+#        text.col = "black", 
+#        horiz = T , 
+#        inset = c(0.5, -0.1))
+
+legend(
+  x = "bottom",           # Position relative to the plot
+  inset = c(-0.1, -0.2),    # Push it DOWN into the margin (negative value)
+  title = "METHUSE",      # Your legend title
+  legend = rownames(radar_final[-c(1,2),]),
+  pch = 20,
+  col = colors_border,
+  text.col = "black",
+  cex = 1.1,
+  pt.cex = 2,
+  bty = "o",              # "o" creates the box (border)
+  bg = "white",           # Background color of the box
+  horiz = TRUE,           # Lay Yes/No side-by-side
+  xpd = TRUE,              # CRITICAL: Allows drawing outside the plot area
+  y.intersp = 0.8,    # Squeezes YES and NO closer together
+  x.intersp = 0.5,    # Squeezes the dot closer to the text
+)
+
+mtext(
+  side = 1,
+  text = "data: TEDS-D 2022-2023", 
+  line = 4,
+  adj = 1,
+  cex = 0.8,
+  #font = 3
+)
+
+
+
+# investigation3_plot <- recordPlot()
+# print(investigation3_plot)
+
+#dev.copy(png, filename = "plots/investigation3_plot.png", width = width, height = height) [10.2]
+dev.off() #[10.2]
+
 
 
 
@@ -237,20 +378,25 @@ investigation4_plot <- ggplot(investigation4_data, aes(x = factor(AGE), y = SUCC
     fontface = "bold"
   ) +
   labs(
-    title = "Bar Chart of Opioid Patient Success over Expected by Opioid Therapy Status and Primary Substance",
-    subtitle = "Expected success determined by GLM based on demographic and abuse data",
+    title = "Impact of METHUSE on Success over Expected by Patient Age",
+    subtitle = "n = 213388",
     y = "Success Rate over Expected",
     x = "Age Group",
     fill = "Given\nOpioid\nTherapy",
-    caption = "Data: TEDS 2022-2023"
+    caption = "Data: TEDS-D 2022-2023"
   ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    text = element_text(face = "bold")
+    )
 #print(investigation4_plot)
-ggsave("investigation4_plot.png", investigation4_plot, path = "plots/",
-       units = "px", width = 750, height = 600, scale = 4)
+ggsave("investigation4_plot.png", investigation4_plot,
+       path = path, units = units, width = width, height = height, scale = scale)
 
 
-rm(list = ls(pattern = "investigation[0-9]|plot_data"))
+#FINAL CLEANUP----
+rm(list = setdiff(ls(), c("circumstances_glm", "clean_data_with_regression",
+                          "TEDS-Dd_puf_join")))
 
 
