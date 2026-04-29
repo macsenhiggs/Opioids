@@ -9,10 +9,10 @@ if (!exists("clean_data_with_regression")) {
 }
 
 #GLOBAL PLOT SETTINGS----
-path = "plots/"
+path = "plots/tall/"
 units = "px"
 width = 750
-height = 600
+height = 750
 scale = 3.5
 
 
@@ -49,7 +49,7 @@ ggsave("investigation0_plot.png", investigation0_plot,
        path = path, units = units, width = width, height = height, scale = scale)
 
 
-#INVESTIGATION 0.1: EXPLORING EXPECTED SUCCESS ACCUR----
+#INVESTIGATION 0.1: EXPLORING EXPECTED SUCCESS ACCURACY FOR UNIQUE PROFILES----
 
 investigation0.1_data <- clean_data_with_regression |>
   group_by(SUB1, SUBS_USED, SERVICES,
@@ -60,15 +60,21 @@ investigation0.1_data <- clean_data_with_regression |>
            ROUTE1, FREQ1, 
            #FRSTUSE1
            ) |>
+  mutate(
+    METHUSE = ifelse(METHUSE == "Yes", 1, 0)
+  ) |>
   summarize(
     EXP_SUCCESS_RATE = mean(EXP_SUCCESS),
     SUCCESS_RATE = mean(SUCCESS),
     SUCCESS_RATE_OE = mean(SUCCESS_OE),
+    METHUSE_RATE = mean(METHUSE),
     n = n(),
     .groups = "drop"
   ) |>
   filter(
-    n >= 100
+    n >= 100,
+    ROUTE1 != "NA",
+    FREQ1 != "NA"
   ) |>
   relocate(SERVICES) |>
   mutate(
@@ -80,9 +86,8 @@ investigation0.1_plot <- ggplot(investigation0.1_data, aes(x = EXP_SUCCESS_RATE,
   geom_point(aes(size = n), alpha = 1) +
   scale_color_brewer(type = "seq", direction = -1, palette = "Spectral") +
   labs(
-    title = "Success Rate vs. Expected Success Rate for Unique Patient Profiles",
-    subtitle = "Each point represents a unique combination of SERVICES, SUB1, SUBS_USED, ROUTE1, & FREQ1
-(Fill indicates SERVICES type, n >= 100)",
+    title = "Actual vs. Expected Success Rate for Unique Patient Profiles",
+    subtitle = "From 368 unique combinations of SERVICES, SUB1, SUBS_USED, ROUTE1, & FREQ1 (n >= 100)",
     x = "Expected Success Rate",
     y = "Actual Success Rate",
     caption = "Data: TEDS-D 2022-2023"
@@ -91,10 +96,15 @@ investigation0.1_plot <- ggplot(investigation0.1_data, aes(x = EXP_SUCCESS_RATE,
   theme(
     legend.position = c(1, 0.1),
     legend.justification = c(1, 0.1),
-    text = element_text(face = "bold")
+    text = element_text(face = "bold"),
+    legend.box.background = element_rect(color = "black", linewidth = 1),
+    legend.background = element_rect(fill = "gray90")
   ) +
   guides(
-    size = FALSE
+    size = "none",
+    color = guide_legend(
+      label.position = "left",
+    )
   )
 
 
@@ -103,25 +113,32 @@ investigation0.1_plot <- ggplot(investigation0.1_data, aes(x = EXP_SUCCESS_RATE,
 ggsave("investigation0_1_plot.png", investigation0.1_plot,
        path = path, units = units, width = width, height = height, scale = scale) 
 
-# investigation0.1_plot_alt <- ggplot(investigation0.1_data, aes(x = EXP_SUCCESS_RATE, y = SUCCESS_RATE_OE, color = SERVICES)) +
-#   geom_abline(intercept = 0, slope = 0, color = "black", linetype = "dashed") +
-#   geom_point(aes(size = n), alpha = 0.5) +
-#   scale_color_brewer(type = "seq", direction = -1, palette = "Spectral") +
-#   labs(
-#     title = "Success Rate OE vs. Expected Success Rate for Unique Patient Profiles",
-#     subtitle = "Each point represents a unique combination of SERVICES, SUB1, SUBS_USED, ROUTE1, & FREQ1
-# (n >= 100)",
-#     x = "Expected Success Rate",
-#     y = "Success Rate OE",
-#     caption = "Data: TEDS-D 2022-2023"
-#   ) +
-#   theme_minimal()
-# 
-# print(investigation0.1_plot_alt)
-# ggsave("investigation0-1_plot_alt.png", investigation0.1_plot_alt,
-#        path = path, units = units, width = width, height = height, scale = scale)
-  
 
+test_plot <- investigation0.1_data |>
+  arrange(METHUSE_RATE) |>
+  mutate(METHUSE_RANK = row_number()) |>
+  ggplot(aes(x = METHUSE_RANK, y = METHUSE_RATE, size = n, color = SERVICES)) +
+  scale_color_brewer(type = "seq", direction = -1, palette = "Spectral") +
+  geom_point(alpha = 0.5) +
+  theme_minimal() +
+  theme(
+    legend.position = c(0.1, 1),
+    legend.justification = c(0.1, 1),
+    text = element_text(face = "bold"),
+    #legend.box.background = element_rect(color = "black", linewidth = 1),
+    #legend.background = element_rect(fill = "gray90"),
+    axis.title.x = element_blank(), # Removes the x-axis title (e.g., "wt")
+    axis.text.x = element_blank(),  # Removes the tick labels (e.g., "2", "3", "4")
+    axis.ticks.x = element_blank()  # Removes the small tick marks
+  ) +
+  guides(
+    size = "none",
+    color = guide_legend(
+      label.position = "right",
+    )
+  )
+
+print(test_plot)
 
 #INVESTIGATION 1: IMPACT OF METHUSE BY DIFFICULTY OF PATIENT CASE----
 investigation1_data <- clean_data_with_regression |>
@@ -281,8 +298,9 @@ colors_in = c(rgb(0.97, 0.46, 0.43, 0.4), rgb(0, 0.75, 0.77, 0.4))
 
 #PLOT STARTS HERE
 
-png("plots/investigation3_plot.png", 
-    width = 10, height = 8, units = "in", res = 200)
+plot3path <- paste0(path, "investigation3_plot.png")
+png(plot3path, 
+    width = 9.25, height = 8, units = "in", res = 200)
 
 plot.new()
 
@@ -291,8 +309,8 @@ plot.new()
 #par(mar = c(7, 6, 6, 4))
 par(
   plt = c(0.15, 0.85, 0.15, 0.85),
-    font.lab = 2,
-    font.axis = 2
+  font.lab = 2,
+  font.axis = 2
   )
 
 radarchart(
